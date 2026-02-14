@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/slopcc-driver",
+    "crates/slopcc-common",
+    "crates/slopcc-lex",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[workspace.dependencies]
+slopcc-common = { path = "crates/slopcc-common" }
+slopcc-lex = { path = "crates/slopcc-lex" }
+mimalloc = { version = "0.1.48", default-features = false }
+thiserror = "2.0.18"

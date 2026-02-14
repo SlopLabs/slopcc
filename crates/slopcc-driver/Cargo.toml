@@ -1,0 +1,13 @@
+[package]
+name = "slopcc"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "slopcc"
+path = "src/main.rs"
+
+[dependencies]
+slopcc-common.workspace = true
+slopcc-lex.workspace = true
+mimalloc.workspace = true
