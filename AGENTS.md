@@ -271,6 +271,14 @@ Guardrails:
 - If subtree is not practical for a small change, document why and use normal branch
   merge while preserving one-scope-per-branch discipline.
 
+Incremental delivery policy (mandatory):
+
+- Avoid massive PRs. Split feature work into small, reviewable commits.
+- Push working branches regularly so progress is recoverable and others can continue.
+- Prefer vertical slices (test + implementation + docs) over large horizontal rewrites.
+- Keep each commit rollback-safe: if reverted, the branch should still build or fail in a clearly isolated way.
+- If a feature is unfinished, push partial progress behind clear scope boundaries and update `STATUS.md` with exact next steps.
+
 ### Dependencies
 
 - **Always use latest versions.** Before adding a dependency, run `cargo info <crate>`
