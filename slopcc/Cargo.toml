@@ -2,10 +2,7 @@
 name = "slopcc"
 version.workspace = true
 edition.workspace = true
-
-[[bin]]
-name = "slopcc"
-path = "src/main.rs"
+license.workspace = true
 
 [dependencies]
 slopcc-common.workspace = true

@@ -59,6 +59,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "slopcc-arena"
+version = "0.1.0"
+
+[[package]]
 name = "slopcc-common"
 version = "0.1.0"
 

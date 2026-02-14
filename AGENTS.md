@@ -15,8 +15,9 @@ Cargo workspace crate under `crates/`.
 
 ```
 slopcc/
+├── slopcc/                # Binary crate. The compiler executable.
 ├── crates/
-│   ├── slopcc-driver/     # Binary crate. CLI entry point + pipeline orchestration.
+│   ├── slopcc-arena/      # Bump arena allocator. Core memory infrastructure.
 │   ├── slopcc-common/     # Shared types used across all crates.
 │   └── slopcc-lex/        # Lexer / tokenizer.
 │   (more crates added as phases are implemented)
@@ -27,6 +28,8 @@ slopcc/
 ├── README.md
 └── AGENTS.md              # You are here
 ```
+
+Executables live at the workspace root level. Library crates live under `crates/`.
 
 New crates are added only when that compiler phase is actively being built. Do not
 create placeholder crates for future phases.
@@ -44,13 +47,33 @@ Each arrow is a crate boundary. Data flows through well-typed interfaces.
 ### Code Quality
 
 - Rust 2021 edition, stable toolchain only.
-- No `unsafe` without a `// SAFETY:` comment proving soundness.
-- No `as any` equivalent patterns — no `unwrap()` in library crates unless the
-  invariant is documented and proven.
+- `unsafe` is encouraged when it provides meaningful speed or simplicity gains.
+  Every `unsafe` block requires a `// SAFETY:` comment explaining the invariant.
+- No `unwrap()` in library crates unless the invariant is documented and proven.
 - Error types use `thiserror`. No stringly-typed errors. No `Box<dyn Error>` in
   public APIs.
 - All public types and functions get doc comments explaining what, not how.
 - Use `#[must_use]` on functions that return values that shouldn't be silently dropped.
+
+### Unsafe Patterns (encouraged)
+
+These patterns are explicitly encouraged throughout the codebase:
+
+- **`&'static` lifetime lying** — arena-allocated data returns `&'static T` references.
+  We know the arena outlives all references to its contents within a compilation pass.
+  Lying to the borrow checker here avoids lifetime parameter pollution across the
+  entire codebase.
+- **`ManuallyDrop`** — explicit ownership control. Values moved into arenas never have
+  their destructors run; the arena bulk-frees raw bytes on drop.
+- **`MaybeUninit`** — type-safe uninitialized memory for arena chunk storage. Avoids
+  unnecessary zeroing of memory that will be written before it is read.
+- **Raw pointer arithmetic** — arena internals, codegen emission buffers, anywhere
+  the abstraction cost of safe wrappers exceeds the safety benefit.
+- **`NonNull`** — preferred over `*mut T` for pointers known to be non-null.
+
+The rule is simple: if `unsafe` makes the code faster or simpler and the invariant
+is provable, use it. Document the invariant with `// SAFETY:`. Do not reach for
+safe-but-slow alternatives out of fear.
 
 ### Architecture
 
@@ -66,7 +89,7 @@ Each arrow is a crate boundary. Data flows through well-typed interfaces.
 1. Create `crates/slopcc-<phase>/` with `Cargo.toml` and `src/lib.rs`.
 2. Add it to the workspace `members` list in the root `Cargo.toml`.
 3. Add it to the workspace `[workspace.dependencies]` table.
-4. Wire it into `slopcc-driver`.
+4. Wire it into the `slopcc` binary crate.
 5. Update this file's repository layout section.
 
 ### Testing — Test-Driven Development
@@ -126,6 +149,26 @@ to test, that means the interface isn't clear yet — define it first.
 - Dev-dependencies and build-dependencies are encouraged when they improve testing,
   code generation, or developer experience.
 - Prefer std where possible, but do not reinvent well-maintained crates.
+
+#### What to use external crates for
+
+Utility and ergonomics crates are encouraged:
+- **CLI**: `clap` for argument parsing
+- **Error handling**: `thiserror`, `anyhow`
+- **Derive macros**: `getset`, `typed-builder`, etc.
+- **Testing**: `pretty_assertions`, `insta`, `criterion`, etc.
+- **Allocators**: `mimalloc` (already the global allocator)
+
+#### What NEVER to use external crates for
+
+Never use a crate that does core compiler work for you. The following are strictly
+forbidden:
+- C parser crates, C lexer crates, C preprocessor crates
+- AST libraries for C
+- Any crate that would replace a compiler phase we are building
+
+The entire point of slopcc is to implement the compiler. Using a `c-parser` crate
+would defeat the purpose. If it's a compiler phase, we write it ourselves.
 
 ### What Not To Do
 

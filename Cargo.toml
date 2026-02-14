@@ -1,7 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/slopcc-driver",
+    "slopcc",
+    "crates/slopcc-arena",
     "crates/slopcc-common",
     "crates/slopcc-lex",
 ]
@@ -12,6 +13,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [workspace.dependencies]
+slopcc-arena = { path = "crates/slopcc-arena" }
 slopcc-common = { path = "crates/slopcc-common" }
 slopcc-lex = { path = "crates/slopcc-lex" }
 mimalloc = { version = "0.1.48", default-features = false }
