@@ -17,16 +17,19 @@ on slopos.
 - **Full C11 compliance** — C89, C99, and C11 semantics with all their quirks
 - **Complete preprocessor** — `#include`, `#define`, conditionals, macro expansion,
   stringification, token pasting, variadic macros, `_Pragma`
-- **x86_64 backend** (primary target)
-- **Inline assembly** — GCC-style `asm`/`__asm__` with constraints
+- **LLVM backend** — we emit LLVM IR via `inkwell`, LLVM handles optimization and
+  machine code generation. This gives us every target (x86_64, i386/16-bit, AArch64,
+  RISC-V) and all optimization levels for free.
+- **Inline assembly** — GCC-style `asm`/`__asm__` with AT&T syntax and constraints
+- **GCC-compatible CLI** — drop-in replacement for `gcc` in most build systems
 - **Accurate diagnostics** — GCC/Clang-quality error messages with source locations
+- **Linux kernel compilation** — a north-star goal that exercises every dark corner
 
 ## Non-Goals (for now)
 
 - Self-hosting (eventual goal, not a constraint during development)
-- Competing with GCC/Clang optimization levels
 - C++ support
-- Non-x86 backends (AArch64, RISC-V planned for later)
+- Implementing our own linker (we dispatch to `lld`/`ld`/`gold` via `-fuse-ld=`)
 
 ## Language: Rust
 
@@ -45,14 +48,18 @@ Cargo workspace, one crate per compiler phase. Crates are added only when that p
 is actively being built.
 
 ```
-Source (.c/.h) → Preprocessor → Lexer → Parser → Sema → IR → Optimizer → Codegen(x86_64) → Assembly
+Source (.c/.h) → Preprocessor → Lexer → Parser → Sema → LLVM IR → [LLVM] → Object Code → [Linker]
 ```
+
+We implement everything left of `[LLVM]`. LLVM handles optimization, machine code
+generation, and assembly. The linker is an external tool invoked as a subprocess.
 
 ### Current Crates
 
 | Crate | Purpose |
 |-------|---------|
-| `slopcc-driver` | CLI entry point, pipeline orchestration |
+| `slopcc` | Binary — CLI entry point, pipeline orchestration |
+| `slopcc-arena` | Bump arena allocator — core memory infrastructure |
 | `slopcc-common` | Shared types: Span, SourceMap, Diagnostics, FileId |
 | `slopcc-lex` | Tokenizer for C source code |
 

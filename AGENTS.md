@@ -37,10 +37,49 @@ create placeholder crates for future phases.
 ## Compiler Pipeline (planned)
 
 ```
-Source → Preprocessor → Lexer → Parser → Sema → IR → Optimizer → Codegen(x86_64) → Assembly
+Source → Preprocessor → Lexer → Parser → Sema → LLVM IR → [LLVM] → Object Code → [Linker]
 ```
 
-Each arrow is a crate boundary. Data flows through well-typed interfaces.
+Each arrow before `[LLVM]` is a crate boundary we implement. LLVM handles optimization,
+machine code generation, and assembly via `inkwell` (safe Rust bindings to LLVM).
+
+We do NOT implement our own IR, optimizer, or machine code backend. LLVM gives us:
+- All optimization levels (-O0 through -O3) for free
+- Every target architecture (x86_64, i386/16-bit, AArch64, RISC-V, etc.)
+- Assembly parsing and encoding (MC layer)
+- 16-bit code generation (required for Linux kernel boot code)
+
+### Linker Strategy
+
+slopcc does not implement a linker. It dispatches to an external linker:
+- Default: system linker (`cc`)
+- Configurable via `-fuse-ld=lld`, `-fuse-ld=gold`, `-fuse-ld=bfd`, etc.
+- The driver invokes the linker as a subprocess after codegen
+
+### CLI Interface
+
+GCC-compatible flags. Users should be able to substitute `slopcc` for `gcc` in most
+build systems without changes:
+- `-c`, `-S`, `-E`, `-o <file>`
+- `-O0`, `-O1`, `-O2`, `-O3`, `-Os`, `-Oz`
+- `-std=c89`, `-std=c99`, `-std=c11`, `-std=gnu11`
+- `-I<dir>`, `-D<macro>`, `-U<macro>`
+- `-W...`, `-Wall`, `-Werror`, `-Wno-...`
+- `-fuse-ld=<linker>`
+- `-v`, `--version`, `-###` (dry-run)
+
+### Inline Assembly
+
+GCC-style extended `asm` and `__asm__` with AT&T syntax:
+```c
+asm volatile ("movl %1, %%eax\n\t"
+              "addl %2, %%eax\n\t"
+              "movl %%eax, %0"
+              : "=r" (result)
+              : "r" (a), "r" (b)
+              : "%eax");
+```
+We parse the asm statement, validate constraints, and emit it as LLVM inline assembly.
 
 ## Rules for AI Agents
 
@@ -131,6 +170,24 @@ to test, that means the interface isn't clear yet — define it first.
 - Custom test runners in `tests/harness/` for batch fixture testing
 - Any tool that improves confidence in correctness
 
+### Per-Crate README.md (MANDATORY)
+
+Every crate has a `README.md` at its root (`crates/slopcc-<name>/README.md` or
+`slopcc/README.md` for the binary). This is the first thing an AI agent reads when
+touching a crate.
+
+Each crate README must contain:
+1. **Purpose** — what this crate does, in 1-2 sentences.
+2. **Points of Interest** — key files, important types, non-obvious design decisions.
+3. **Public API** — summary of the main entry points and how to use them.
+4. **Dependencies** — which other slopcc crates this depends on and why.
+5. **Status** — what is implemented, what is not yet.
+
+**Before pushing any commit, update the README of every crate you touched.** This is
+non-negotiable. If you changed a public API, the README must reflect it. If you added
+a new module, the README must list it. Stale documentation is worse than no documentation
+because it actively misleads the next agent.
+
 ### Conventions
 
 - Commit messages: imperative mood, concise. `add token types for C keywords` not
@@ -170,6 +227,34 @@ forbidden:
 The entire point of slopcc is to implement the compiler. Using a `c-parser` crate
 would defeat the purpose. If it's a compiler phase, we write it ourselves.
 
+### Preventing Code Duplication (CRITICAL)
+
+This project is built by multiple AI agents across many sessions. The #1 failure mode
+is agents losing overview of the codebase and reimplementing things that already exist.
+
+**Before writing ANY new function, type, or module:**
+1. Search the codebase for existing implementations. Use grep, find, or your tools.
+2. Check `slopcc-common` — shared types belong there, not duplicated per-crate.
+3. Check `slopcc-arena` — all arena allocation goes through this crate.
+4. Read doc comments on public APIs of crates you depend on.
+
+**If you find existing code that almost does what you need:**
+- Extend it. Do not create a parallel implementation.
+- If the existing API needs changes, change it and update all callers.
+
+**Canonical locations (one implementation, one place):**
+
+| Concern | Lives in | Never duplicate in |
+|---------|----------|--------------------|
+| Span, FileId, SourceMap | `slopcc-common` | Any other crate |
+| Diagnostics, error reporting | `slopcc-common` | Any other crate |
+| Arena allocation | `slopcc-arena` | Any other crate |
+| Token types | `slopcc-lex` | Parser or preprocessor |
+| AST node types | `slopcc-ast` (when created) | Sema or codegen |
+
+**If you are unsure whether something already exists, search first.** Five minutes of
+searching beats five hours of debugging a duplicate implementation that subtly diverges.
+
 ### What Not To Do
 
 - Do not create crates for phases that don't exist yet.
@@ -179,6 +264,8 @@ would defeat the purpose. If it's a compiler phase, we write it ourselves.
 - Do not suppress warnings or errors. Fix them.
 - Do not write code that "works for now" — write it correctly or leave a clear
   interface for the next agent to implement.
+- Do not reimplement functionality that exists elsewhere in the codebase.
+  Search before you write.
 
 ## Current Status
 
