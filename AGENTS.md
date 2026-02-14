@@ -242,23 +242,33 @@ Interpretation rules:
 
 ### Multi-Agent Git Workflow
 
-When coordinating multiple subagents in parallel, prefer `git subtree`-based intake to
-reduce branch conflicts and preserve independently-reviewable histories.
+When coordinating multiple subagents in parallel, prefer `git subtree`-based intake by
+starting each subagent from the same current commit and merging results back into one
+integration branch managed by the master agent.
+
+Role model:
+
+- Project maintainer (human): sets direction, reviews PR, merges on GitHub.
+- Master agent: subtree maintainer/integrator; orchestrates subagents and performs final integration.
+- Subagents: scoped developers working in isolated subtree clones from the same base commit.
 
 Recommended flow:
 
-1. Create one branch per subagent output.
-2. Import each branch through a subtree merge strategy into an integration branch.
-3. Resolve conflicts manually in the integration branch (never by dropping one side).
-4. Open a GitHub PR from integration branch for final review and merge.
+1. Snapshot the current commit as the integration base.
+2. Create one subtree clone/worktree per subagent from that exact base commit.
+3. Let each subagent implement only its scoped change in its subtree clone.
+4. Merge each subtree result back into the integration branch in small steps.
+5. Resolve conflicts manually in the integration branch (never by dropping one side).
+6. Push the integration result to a `feature/*` or `fix/*` branch and open a PR.
 
 Guardrails:
 
 - Do not push directly to `main`/`master` from agent sessions.
 - Keep remote history non-destructive (no force-push to protected branches).
+- Master agent is responsible for final integration and conflict resolution.
 - Prefer manual GitHub merge after review over direct local fast-forwarding.
 - If subtree is not practical for a small change, document why and use normal branch
-  merge while keeping one-feature-per-branch discipline.
+  merge while preserving one-scope-per-branch discipline.
 
 ### Dependencies
 
