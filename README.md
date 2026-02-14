@@ -23,6 +23,7 @@ on slopos.
 - **Inline assembly** — GCC-style `asm`/`__asm__` with AT&T syntax and constraints
 - **GCC-compatible CLI** — drop-in replacement for `gcc` in most build systems
 - **Accurate diagnostics** — GCC/Clang-quality error messages with source locations
+- **Memory efficiency first** — prefer borrowed/slice-based data and compact layouts
 - **Linux kernel compilation** — a north-star goal that exercises every dark corner
 
 ## Non-Goals (for now)

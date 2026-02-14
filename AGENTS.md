@@ -93,6 +93,11 @@ We parse the asm statement, validate constraints, and emit it as LLVM inline ass
   public APIs.
 - All public types and functions get doc comments explaining what, not how.
 - Use `#[must_use]` on functions that return values that shouldn't be silently dropped.
+- Memory efficiency is a first-class requirement:
+  - Prefer references/slices (`&str`, `&[T]`) over owned allocations in hot paths.
+  - Prefer `Box<[T]>`/`Box<str>` over `Vec<T>`/`String` for immutable stored data.
+  - Avoid cloning unless ownership boundaries require it; document those boundaries.
+  - Choose data layouts that minimize per-token/per-node overhead.
 
 ### Unsafe Patterns (encouraged)
 
@@ -284,6 +289,9 @@ Incremental delivery policy (mandatory):
 - **Always use latest versions.** Before adding a dependency, run `cargo info <crate>`
   to check the current version, features, and license. Then use `cargo add <crate>` to
   add it — this always pulls the latest release.
+- All dependencies must be declared in root `[workspace.dependencies]` and consumed from
+  member crates via `*.workspace = true` (never duplicate version pins in crate-level
+  `Cargo.toml` files).
 - Never hardcode stale version numbers from memory. Your training data is outdated.
   `cargo info` is the source of truth.
 - Dev-dependencies and build-dependencies are encouraged when they improve testing,

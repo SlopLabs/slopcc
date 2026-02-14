@@ -18,3 +18,4 @@ slopcc-common = { path = "crates/slopcc-common" }
 slopcc-lex = { path = "crates/slopcc-lex" }
 mimalloc = { version = "0.1.48", default-features = false }
 thiserror = "2.0.18"
+clap = { version = "4.5.58", features = ["derive"] }
