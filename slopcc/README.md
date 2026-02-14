@@ -10,7 +10,9 @@ linker.
 
 ## Points of Interest
 
-- `src/main.rs` — entry point. Sets mimalloc as global allocator.
+- `src/main.rs` — process entry point and exit code handling.
+- `src/cli.rs` — initial GCC-shaped argument parser.
+- `src/driver.rs` — driver boundary for source loading and phase dispatch.
 - GCC-compatible CLI flags: `-c`, `-S`, `-E`, `-o`, `-O`, `-std=`, `-I`, `-D`,
   `-W`, `-fuse-ld=`, `-v`, `--version`, `-###`
 
@@ -28,4 +30,5 @@ Additional compiler phase crates will be added as they are implemented.
 
 ## Status
 
-Scaffolded. Prints a placeholder message. No CLI parsing or pipeline logic yet.
+Initial CLI parsing and driver scaffolding implemented. Binary now parses a core
+flag subset, loads input sources, and reports tokenizer phase as not implemented.

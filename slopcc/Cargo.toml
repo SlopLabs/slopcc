@@ -8,3 +8,5 @@ license.workspace = true
 slopcc-common.workspace = true
 slopcc-lex.workspace = true
 mimalloc.workspace = true
+thiserror.workspace = true
+clap.workspace = true

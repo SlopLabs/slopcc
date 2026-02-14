@@ -11,7 +11,9 @@ all references within a pass.
 
 ## Points of Interest
 
-- `src/lib.rs` — the entire implementation. Single file, intentionally simple.
+- `src/lib.rs` — arena implementation and allocation APIs.
+- `src/boxed.rs` — `ArenaBox<T>` wrapper for arena-owned references.
+- `src/prelude.rs` — canonical exports for downstream crates.
 - `Chunk` — raw memory blocks allocated via the global allocator (mimalloc).
   Uses `NonNull<MaybeUninit<u8>>` for type-safe uninitialized storage.
 - `ManuallyDrop` — values moved into the arena never have destructors run.
@@ -25,6 +27,7 @@ all references within a pass.
 Arena::new() -> Arena                           // 8 KiB chunks (default)
 Arena::with_chunk_size(usize) -> Arena          // custom chunk size
 Arena::alloc<T>(value: T) -> &'static T         // allocate a single value
+Arena::alloc_box<T>(value: T) -> ArenaBox<T>    // allocate and wrap as arena box
 Arena::alloc_str(s: &str) -> &'static str       // allocate a string copy
 Arena::alloc_slice<T: Copy>(&[T]) -> &'static [T]  // allocate a slice copy
 ```
@@ -36,5 +39,5 @@ when used from the slopcc binary.
 
 ## Status
 
-Implemented and tested. 15 unit tests covering allocation, alignment, threading,
-edge cases (ZST, empty slices, oversized rejection), and unicode strings.
+Implemented and tested. 16 unit tests covering allocation, alignment, threading,
+edge cases (ZST, empty slices, oversized rejection), arena box wrapper, and unicode strings.
