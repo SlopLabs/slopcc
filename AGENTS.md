@@ -188,6 +188,50 @@ non-negotiable. If you changed a public API, the README must reflect it. If you 
 a new module, the README must list it. Stale documentation is worse than no documentation
 because it actively misleads the next agent.
 
+### Session Status Tracking (STATUS.md) (MANDATORY)
+
+`STATUS.md` at repo root is the single source of truth for cross-session continuity.
+Every agent must read it first and update it during handoff.
+
+Required structure:
+
+```md
+# STATUS
+
+## Current State
+- One-line truth of current project state
+
+## Next Up
+- [ ] P1: highest-priority next task
+- [ ] P2: second-priority next task
+- [ ] P3: third-priority next task
+
+## Deferred (Too Hard / Later)
+- [ ] Item — reason blocked now; unblock condition
+
+## Last Updated
+- YYYY-MM-DD by <agent> in <branch>
+```
+
+Usage protocol (strict):
+
+1. Before work: read `STATUS.md` and align scope with `Next Up`.
+2. While working: keep at most three actionable items in `Next Up`.
+3. When blocked or too costly now: move item to `Deferred` with both:
+   - reason blocked now
+   - clear unblock condition (what must become true to resume)
+4. At end of session: update `Current State` to reflect factual progress, not intent.
+5. Never delete deferred items silently; either complete them or keep them deferred.
+6. If priorities change, reorder `Next Up` by execution order.
+
+Interpretation rules:
+
+- `Current State` answers: "Where are we right now?"
+- `Next Up` answers: "What should be worked on next?"
+- `Deferred` answers: "What is known but intentionally postponed?"
+- If `STATUS.md` conflicts with stale README status text, trust `STATUS.md` first and
+  then update affected READMEs in the same session.
+
 ### Conventions
 
 - Commit messages: imperative mood, concise. `add token types for C keywords` not
@@ -195,6 +239,36 @@ because it actively misleads the next agent.
 - Branch per feature when the change is large.
 - No commented-out code in committed files.
 - No TODO comments without a linked issue or concrete plan.
+
+### Multi-Agent Git Workflow
+
+When coordinating multiple subagents in parallel, prefer `git subtree`-based intake by
+starting each subagent from the same current commit and merging results back into one
+integration branch managed by the master agent.
+
+Role model:
+
+- Project maintainer (human): sets direction, reviews PR, merges on GitHub.
+- Master agent: subtree maintainer/integrator; orchestrates subagents and performs final integration.
+- Subagents: scoped developers working in isolated subtree clones from the same base commit.
+
+Recommended flow:
+
+1. Snapshot the current commit as the integration base.
+2. Create one subtree clone/worktree per subagent from that exact base commit.
+3. Let each subagent implement only its scoped change in its subtree clone.
+4. Merge each subtree result back into the integration branch in small steps.
+5. Resolve conflicts manually in the integration branch (never by dropping one side).
+6. Push the integration result to a `feature/*` or `fix/*` branch and open a PR.
+
+Guardrails:
+
+- Do not push directly to `main`/`master` from agent sessions.
+- Keep remote history non-destructive (no force-push to protected branches).
+- Master agent is responsible for final integration and conflict resolution.
+- Prefer manual GitHub merge after review over direct local fast-forwarding.
+- If subtree is not practical for a small change, document why and use normal branch
+  merge while preserving one-scope-per-branch discipline.
 
 ### Dependencies
 
