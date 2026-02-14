@@ -263,7 +263,8 @@ Recommended flow:
 
 Guardrails:
 
-- Do not push directly to `main`/`master` from agent sessions.
+- Non-code/docs-only changes may be pushed directly to `main`/`master`.
+- Code changes must not be pushed directly to `main`/`master`; use `feature/*` or `fix/*` branches.
 - Keep remote history non-destructive (no force-push to protected branches).
 - Master agent is responsible for final integration and conflict resolution.
 - Prefer manual GitHub merge after review over direct local fast-forwarding.
