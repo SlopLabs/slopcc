@@ -1,28 +1,32 @@
 # slopcc-lex
 
-Lexer / tokenizer for C source code.
+Tokenizer crate for C source input.
 
 ## Purpose
 
-Converts a byte stream of C source into a token stream. Handles all C89/C99/C11
-token types including keywords, identifiers, numeric and string literals, operators,
-and punctuation.
+Defines the single tokenizer stage for slopcc. It scans source bytes and emits a
+general token stream suitable as the input boundary for preprocessing and later parser
+token cleanup.
 
 ## Points of Interest
 
-- `src/lib.rs` — currently empty, awaiting implementation.
+- `src/lib.rs` — crate entry point (still intentionally empty).
+- Tokenization model: one tokenizer type (`Tokenizer`) for all source scanning.
+- Pipeline intent: source -> tokenizer output -> preprocessor -> parser-facing token stream.
 
 ## Public API
 
-Not yet implemented. Planned:
-- `Token` type with span information
-- `TokenKind` enum covering all C token types
-- `Lexer` iterator that yields tokens from source bytes
+Not implemented yet. Planned surface:
+
+- `Tokenizer` — source scanner entry point.
+- `Token` — token value with location metadata.
+- `TokenKind` — token category enum.
+- Supporting span/diagnostic integration via `slopcc-common` types.
 
 ## Dependencies
 
-- `slopcc-common` — for `Span`, `FileId`, diagnostics
+- `slopcc-common` — shared source location and diagnostics primitives.
 
 ## Status
 
-Scaffolded. No lexer logic implemented yet.
+Scaffolded only. No tokenizer logic has been implemented yet.
